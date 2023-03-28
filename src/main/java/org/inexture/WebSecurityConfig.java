@@ -1,0 +1,53 @@
+package org.inexture;
+
+import org.inexture.common.MyException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
+
+@EnableWebSecurity
+public class WebSecurityConfig {
+
+    @Autowired
+    public DSConfiguration dsConfiguration;
+
+    @Bean
+    public RequestCache requestCache() {
+        return new HttpSessionRequestCache();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorize -> {
+                    try {
+                        authorize.antMatchers("/", "/error**", "/assets/**", "/ds/mustAuthenticate**",
+                                        "/ds/authenticate**", "/ds/selectApi**","/index**","/end**","/home**")
+                                .permitAll()
+                                .anyRequest().authenticated()
+                                .and()
+                                .exceptionHandling()
+                                .authenticationEntryPoint(
+                                        new LoginUrlAuthenticationEntryPoint("/ds/mustAuthenticate")
+                                );
+                    } catch (Exception e) {
+                        throw new MyException("Filter Error",e.getCause());
+                    }
+                })
+                .requestCache().requestCache(requestCache()).and()
+                .oauth2Login(Customizer.withDefaults())
+                .oauth2Client(Customizer.withDefaults())
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/")
+                )
+                .csrf().disable();
+
+        return  http.build();
+    }
+}

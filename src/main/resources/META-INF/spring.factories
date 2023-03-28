@@ -1,0 +1,2 @@
+#load json file as a property file in spring boot
+org.springframework.boot.env.PropertySourceLoader=org.inexture.JsonPropertySourceLoader
